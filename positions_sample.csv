@@ -1,0 +1,4 @@
+symbol,quantity,account_id,account_type
+AAPL,10,brokerage_1,taxable
+MSFT,5,brokerage_1,taxable
+GOOGL,3,,taxable
