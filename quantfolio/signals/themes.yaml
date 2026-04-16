@@ -1,0 +1,104 @@
+# Quantfolio theme graph seed.
+# When a theme's member ticker trends in today's headlines and you hold
+# none of them, the brief surfaces the proxies listed here.
+
+themes:
+  space:
+    tickers: [RKLB, LMT, BA, NOC]
+    proxies: [ARKX, UFO, ITA]
+    private: [SpaceX, Blue Origin]
+
+  private_ai:
+    tickers: [MSFT, GOOGL, NVDA, META, AMD]
+    proxies: [ARKK, BOTZ, AIQ]
+    private: [OpenAI, Anthropic, xAI]
+
+  semis_fabs:
+    tickers: [TSM, ASML, LRCX, AMAT, KLAC]
+    proxies: [SOXX, SMH]
+    private: []
+
+  defense:
+    tickers: [LMT, NOC, RTX, GD, LDOS]
+    proxies: [ITA, XAR]
+    private: [Palantir, Anduril]
+
+  nuclear_reentry:
+    tickers: [CEG, VST, OKLO, BWXT, NNE]
+    proxies: [URA, NLR]
+    private: [TerraPower]
+
+  obesity_glp1:
+    tickers: [LLY, NVO, PFE, VKTX]
+    proxies: [XBI, IHI]
+    private: []
+
+  ev_battery:
+    tickers: [TSLA, RIVN, LCID, ALB, PLUG]
+    proxies: [LIT, DRIV]
+    private: [Rivian-adj]
+
+  cybersecurity:
+    tickers: [CRWD, PANW, ZS, S, FTNT]
+    proxies: [HACK, CIBR]
+    private: []
+
+  cloud_infra:
+    tickers: [MSFT, GOOGL, AMZN, NET, DDOG, SNOW]
+    proxies: [SKYY, WCLD]
+    private: []
+
+  genomics_crispr:
+    tickers: [CRSP, NTLA, EDIT, BEAM]
+    proxies: [XBI, ARKG]
+    private: []
+
+  fintech_payments:
+    tickers: [V, MA, SQ, PYPL, SHOP]
+    proxies: [ARKF, FINX]
+    private: [Stripe]
+
+  quantum_compute:
+    tickers: [IONQ, RGTI, QBTS, IBM]
+    proxies: [QTUM]
+    private: [PsiQuantum]
+
+  commercial_drones:
+    tickers: [KTOS, AVAV, ONDS]
+    proxies: [ITA, XAR]
+    private: [Shield AI]
+
+  lithium_miners:
+    tickers: [ALB, SQM, LTHM]
+    proxies: [LIT]
+    private: []
+
+  clean_hydrogen:
+    tickers: [PLUG, BE, BLDP, LIN]
+    proxies: [HDRO, HJEN]
+    private: []
+
+  robotics:
+    tickers: [ISRG, NVDA, TER, ABB]
+    proxies: [BOTZ, ROBO]
+    private: [Boston Dynamics]
+
+  reit_datacenters:
+    tickers: [EQIX, DLR, AMT]
+    proxies: [REET, VNQ]
+    private: []
+
+  agri_supply:
+    tickers: [DE, AGCO, CF, MOS, NTR]
+    proxies: [MOO, DBA]
+    private: []
+
+  gaming:
+    tickers: [EA, TTWO, RBLX, NTES]
+    proxies: [GAMR, HERO]
+    private: []
+
+  biotech_weight_loss:
+    tickers: [LLY, NVO, AMGN, VKTX]
+    proxies: [XBI, IBB]
+    private: []
