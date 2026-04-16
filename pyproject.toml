@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantfolio"
+version = "0.2.0"
+description = "Portfolio-aware signal engine for the terminal."
+requires-python = ">=3.10"
+authors = [{ name = "Mohammadsajad Abavisani", email = "abavisani@me.com" }]
+license = { text = "MIT" }
+dependencies = [
+    "yfinance>=0.2.36",
+    "requests>=2.31.0",
+    "feedparser>=6.0.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+    "anthropic>=0.25.0",
+]
+
+[project.scripts]
+quantfolio = "quantfolio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quantfolio*"]
