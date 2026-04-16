@@ -1,0 +1,14 @@
+# Example cron entries for quantfolio.
+#
+# Morning brief at 6:30 AM ET (10:30 UTC) weekdays — replace REPO_PATH.
+30 10 * * 1-5 cd REPO_PATH && /usr/bin/env python3 -m quantfolio brief >> /tmp/quantfolio.brief.log 2>&1
+#
+# Hourly watcher, every 15 min during US market hours (9:30–16:00 ET).
+# In UTC (no DST) that's 13:30–20:00; adjust for your local timezone.
+30,45 13 * * 1-5 cd REPO_PATH && /usr/bin/env python3 -m quantfolio watch >> /tmp/quantfolio.watch.log 2>&1
+0,15,30,45 14-19 * * 1-5 cd REPO_PATH && /usr/bin/env python3 -m quantfolio watch >> /tmp/quantfolio.watch.log 2>&1
+0 20 * * 1-5 cd REPO_PATH && /usr/bin/env python3 -m quantfolio watch >> /tmp/quantfolio.watch.log 2>&1
+#
+# Optional: set env in your shell rc so the cron child inherits them, or
+# pass them inline, e.g.:
+#   ANTHROPIC_API_KEY=sk-... NTFY_TOPIC=your-topic 30 10 * * 1-5 ...

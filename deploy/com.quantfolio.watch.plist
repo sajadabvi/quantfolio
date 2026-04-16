@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd agent: runs `quantfolio watch` every 15 minutes during US market hours.
+  Install:
+    cp deploy/com.quantfolio.watch.plist ~/Library/LaunchAgents/
+    launchctl load  ~/Library/LaunchAgents/com.quantfolio.watch.plist
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.quantfolio.watch.plist
+  Edit PROGRAM_ARGUMENTS path to match your install location.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.quantfolio.watch</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>python3</string>
+    <string>-m</string>
+    <string>quantfolio</string>
+    <string>watch</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>REPLACE_WITH_REPO_PATH</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    <!-- Optional:
+    <key>ANTHROPIC_API_KEY</key><string>sk-ant-...</string>
+    <key>NTFY_TOPIC</key><string>your-private-topic</string>
+    -->
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <!-- Every 15 min between 9:30 and 16:00 ET, Mon–Fri.
+         Adjust hours for your local timezone. -->
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>45</integer></dict>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+    <!-- Truncated for brevity; expand by copy-paste or use cron if you prefer. -->
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/quantfolio.watch.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/quantfolio.watch.err</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
