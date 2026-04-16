@@ -1,24 +1,52 @@
-# Quantfolio: Quantitative Portfolio Intelligence Platform
+# Quantfolio
 
-A lightweight, **API-key-free** quantitative portfolio analytics engine that combines real-time equity pricing with multi-source market intelligence. Built for quant researchers, prop traders, and portfolio analysts who need fast, reliable position tracking and event-driven sentiment signals.
+**A portfolio-aware signal engine for the terminal.** Quantfolio watches your
+holdings and surfaces only what changes your decisions — ranked, filtered to
+your positions, quiet unless something actually matters.
 
-**Zero external dependencies** (except yfinance, requests, feedparser). No authentication overhead. Deploy locally or in your trading infrastructure.
+Not another dashboard. Not a news feed. A deliberately small tool that answers
+one question: *given what I own, what changed today that I need to know?*
 
-## Features
+## Three tiers, attention-matched
 
-### Core Analytics
-- **Real-time portfolio valuation**: Ingest positions from CSV or CLI, fetch live/historical prices via Yahoo Finance API, compute position-level P&L and portfolio Greeks-ready data structures
-- **Flexible position import**: Auto-map brokerage CSV formats (E*TRADE, Fidelity, Interactive Brokers, etc.) with zero configuration
-- **Per-position breakdown**: Account type awareness (taxable/IRA), quantity tracking, price history for backtesting prep
+1. **Morning brief** — exactly 3 ranked signals with a 1–2 sentence synthesis:
+   "this changes your thesis on X because Y." Never "buy" or "sell."
+2. **Hourly digest** — quiet terminal output of deltas since last hour. No push.
+3. **Push-now** — rare. Only for earnings miss while held, trading halt, M&A,
+   FDA action, SEC filing, analyst revision beyond threshold. Hard cap:
+   2 pushes/day default, tunable.
 
-### Market Intelligence
-- **Multi-source news aggregation**: 
-  - **RSS feeds**: Yahoo Finance + Google News (no API keys required)
-  - **Sentiment proxy**: StockTwits public API for retail positioning signals
-  - **Real-time filtering**: Surface news/sentiment relevant to your positions
-- **Event-driven alerts**: Flag significant news that could impact position value
+## How it scores
 
-## Installation
+Every candidate headline is scored along four axes:
+
+| Axis             | What it measures                                                      |
+|------------------|-----------------------------------------------------------------------|
+| **Materiality** | Keyword rubric (earnings, guidance, FDA, halt, …) + source tier      |
+| **Portfolio impact** | Scaled by your position weight — a 40% holding dominates a 2%   |
+| **Novelty**      | SHA-256 of normalized title+source. Yesterday's story doesn't re-surface |
+| **Urgency**      | Time-to-action (tonight > next week)                                  |
+
+Weights live in [`quantfolio/signals/weights.yaml`](quantfolio/signals/weights.yaml).
+Edit the YAML — no code changes.
+
+## Theme graph
+
+When a theme is trending in the news but you hold none of its members,
+Quantfolio surfaces an adjacent public proxy (e.g. no space stocks → ARKX/UFO).
+Seed list of ~20 themes in
+[`quantfolio/signals/themes.yaml`](quantfolio/signals/themes.yaml).
+
+## LLM-as-analyst (narrow use)
+
+News discovery stays rule-based (fast, cheap). The Claude API is used for
+*one* step: take the top scored headlines + your portfolio, produce a
+3-bullet brief. Set `ANTHROPIC_API_KEY` to opt in. Without it, a rule-based
+template produces the same structure.
+
+Default model: `claude-sonnet-4-6`.
+
+## Install
 
 ```bash
 git clone https://github.com/sajadabvi/quantfolio.git
@@ -26,49 +54,66 @@ cd quantfolio
 pip install -r requirements.txt
 ```
 
-**Requirements:** Python 3.9+, ~15MB disk footprint
+Requires Python 3.10+.
 
-## Quick Start
-
-### Portfolio Valuation (Single Command)
+## CLI
 
 ```bash
-# Load positions and compute portfolio value with sentiment
-python portfolio.py positions_sample.csv
-
-# Cash-only strategy (useful for simulations)
-python portfolio.py --cash 100000
-
-# Combined positions + cash (typical use)
-python portfolio.py positions_sample.csv --cash 50000
-
-# Performance mode (skip news fetch)
-python portfolio.py positions_sample.csv --no-news
+quantfolio import <csv>      # one-time, persists positions
+quantfolio show              # existing portfolio snapshot (legacy UI)
+quantfolio brief             # morning 3-signal brief
+quantfolio watch             # hourly-digest + push-tier (cron this)
+quantfolio journal           # review past signals, mark useful/noise
+quantfolio themes            # list the theme graph
 ```
 
-**Output:** ASCII table with symbol, qty, price, position value + cash + total portfolio value
+`python portfolio.py <csv>` still works for backward compatibility.
 
-### Real-Time Sentiment & News
+### Typical flow
 
 ```bash
-# Auto-runs with portfolio.py; or invoke separately:
-python news.py AAPL MSFT GOOGL TLT
+# One time
+python -m quantfolio import positions_sample.csv
 
-# Output: Yahoo Finance + Google News RSS + StockTwits sentiment per ticker
+# Every morning
+python -m quantfolio brief
+
+# Every 15 min during market hours (via cron or launchd)
+python -m quantfolio watch
+
+# Whenever you want to review what you've seen
+python -m quantfolio journal
 ```
 
-### Position CSV Format
+## Persistence
 
-Positions file should include at minimum:
+SQLite at `~/.quantfolio/quantfolio.db`:
 
-| Column       | Required | Type  | Notes                    |
-|-------------|----------|-------|--------------------------|
-| `symbol`    | ✓ Yes    | str   | Ticker symbol (e.g. AAPL, SPY) |
-| `quantity`  | ✓ Yes    | float | Number of shares (supports decimals for fractional shares) |
-| `account_id`| No       | str   | Account identifier for reporting |
-| `account_type` | No    | str   | e.g. `taxable`, `IRA`, `401k` (useful for tax-aware analytics) |
+| Table             | Purpose                                                     |
+|-------------------|-------------------------------------------------------------|
+| `positions`       | symbol, quantity, account_id, account_type, updated_at      |
+| `seen_headlines`  | hash, title, source, symbol, first_seen_at (dedup)          |
+| `signal_log`      | tier, symbol, title, score, pushed_at, user_rating (journal)|
 
-**Example:**
+## Notifications
+
+- **Terminal** — rich-rendered panels (the visual hook).
+- **Desktop push (macOS)** — `osascript` display notification.
+- **Phone push** — [ntfy.sh](https://ntfy.sh) (free, no account). Set `NTFY_TOPIC`.
+
+## Position CSV format
+
+Auto-maps broker exports (Fidelity, E*TRADE, Schwab, IBKR). Recognized columns:
+
+| Column                                   | Required | Notes               |
+|------------------------------------------|----------|---------------------|
+| `Ticker` / `Symbol` / `symbol`           | ✓        | Case-insensitive    |
+| `Shares` / `Quantity` / `Qty`            | ✓        | Supports fractional |
+| `Account` / `Account ID` / `account_id`  |          | Multi-account OK    |
+| `Account Type` / `account_type`          |          | e.g. taxable / IRA  |
+
+Example:
+
 ```csv
 symbol,quantity,account_id,account_type
 AAPL,100.5,brokerage_1,taxable
@@ -76,89 +121,50 @@ SPY,50,retirement_1,IRA
 MSFT,25.25,brokerage_1,taxable
 ```
 
-### Broker Integration (Zero Configuration)
+## Cron / launchd
 
-Export your broker's positions as CSV (Fidelity, E*TRADE, Interactive Brokers, etc.). Column names are automatically mapped—no manual editing required. Supported variants:
-- `Ticker` / `Symbol` / `symbol`
-- `Shares` / `Quantity` / `Qty` / `quantity`
-- `Account` / `Account ID` / `account_id`
-- `Account Type` / `account_type`
-
-To add additional broker column mappings, edit `BROKER_COLUMN_MAP` in `portfolio.py` (~50 lines).
-
-## Data Sources & APIs
-
-| Source        | Endpoint      | Data Provided | Rate Limit | Auth |
-|---------------|---------------|---------------|-----------|------|
-| **yfinance**  | Yahoo Finance | Live/historical OHLCV, fundamentals | ~2000 calls/hour | None |
-| **Google News RSS** | News feeds | Curated news per ticker | Standard RSS | None |
-| **Yahoo Finance RSS** | News feeds | Market news + earnings | Standard RSS | None |
-| **StockTwits**| Public API | Retail sentiment, discussion volume | ~1000 calls/day | None |
-
-**No API keys required.** Production-grade for backtesting and analysis. Not suitable for microsecond-latency strategies.
-
-## Architecture & Design
-
-- **Modular design**: Portfolio valuation (`portfolio.py`) and news aggregation (`news.py`) are independent modules
-- **Efficient pricing**: Batch yfinance calls with fallback to historical OHLC
-- **Flexible I/O**: CSV in, human-readable ASCII table + structured data dicts out
-- **Extensibility**: Easy to add new data sources, account types, or analytics
-
-## Use Cases
-
-- **Portfolio monitoring**: Track multi-account positions and performance in real-time
-- **Quantitative backtesting**: Feed position data + pricing into your factor models
-- **Event-driven research**: Correlate portfolio movements with news/sentiment signals
-- **Risk management**: Rapid P&L snapshots across accounts and position types
-- **Prop trading desk**: Lightweight, zero-latency position tracking for multiple traders
-
-## Scope & Limitations
-
-**In scope:** Equity positions (stocks, ETFs) with flexible account structures  
-**Out of scope:** Fixed income, derivatives, real estate, crypto, cash balances, liabilities (planned for v2.0)
-
-**Performance:** Processes typical retail portfolios (100–1000 positions) in <5 seconds with news; <1 second without.
-
-## Examples
-
-### Load a Fidelity Export + Check Market Sentiment
+`deploy/crontab.example` and `deploy/com.quantfolio.watch.plist` are templates
+for running `watch` every 15 min during market hours. Edit the repo path, then:
 
 ```bash
-# Export from Fidelity (Accounts > Positions > Download)
-python portfolio.py ~/Downloads/Fidelity_Positions.csv --cash 10000
+# cron
+crontab deploy/crontab.example
 
-# Output:
-# Symbol     Qty           Price         Value
-# AAPL       100.00      182.52      18,252.00
-# MSFT        50.00      380.25      19,012.50
-# ...
-# TOTAL                                 50,000.00
-#
-# [Automatically fetches news for AAPL, MSFT, ... ]
+# or launchd
+cp deploy/com.quantfolio.watch.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.quantfolio.watch.plist
 ```
 
-### Backtest Integration
+## Layout
 
-```python
-from portfolio import load_positions_from_csv, fetch_prices, compute_portfolio_value
-
-positions = load_positions_from_csv("my_positions.csv")
-prices = fetch_prices(["AAPL", "SPY", "TSLA"])
-total_value, breakdown = compute_portfolio_value(positions, prices)
-
-for row in breakdown:
-    print(f"{row['symbol']}: ${row['value']:,.2f}")
+```
+portfolio.py                 # thin wrapper, delegates to quantfolio package
+news.py                      # thin wrapper, delegates to quantfolio.sources
+quantfolio/
+  store.py                   # sqlite access
+  pricing.py                 # yfinance
+  sources/{yahoo,google_rss}.py
+  signals/
+    score.py                 # scoring pipeline
+    novelty.py               # dedup
+    thematic.py              # theme graph lookup
+    synthesize.py            # Claude API call
+    pipeline.py              # glue
+    weights.yaml
+    themes.yaml
+  notify/{terminal,desktop,push}.py
+  cli/                       # argparse dispatcher + per-command files
+deploy/                      # cron + launchd templates
+tests/                       # unit tests (scoring, novelty)
 ```
 
-## Contributing
+## Scope
 
-Contributions welcome! Areas of interest:
-- Additional data sources (Polygon.io, IEX Cloud, etc.)
-- Derivatives support (options P&L)
-- Tax-aware reporting (wash sale, cost basis)
-- Real-time websocket updates
-- Web dashboard frontend
+**In scope:** equity positions (stocks, ETFs), news-driven signals, CLI +
+terminal + desktop + phone push.
+
+**Out of scope:** derivatives, crypto, fixed income, web UI. By design.
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT.
