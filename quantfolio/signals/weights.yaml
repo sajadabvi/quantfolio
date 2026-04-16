@@ -1,0 +1,84 @@
+# Quantfolio scoring weights. Edit freely — no code changes required.
+# All scores are additive; final ranking uses sum.
+
+# --- Materiality ---------------------------------------------------------
+# Keyword rubric: each match adds points. Case-insensitive substring match
+# on the headline. Multiple matches stack.
+materiality:
+  keywords:
+    earnings:      8
+    guidance:      9
+    downgrade:     7
+    upgrade:       6
+    fda:           10
+    "m&a":         10
+    merger:        9
+    acquire:       8
+    acquisition:   9
+    halt:          10
+    lawsuit:       6
+    "10-k":        5
+    "8-k":         5
+    "10-q":        4
+    recall:        8
+    insider:       5
+    bankruptcy:    10
+    dividend:      3
+    buyback:       5
+    resign:        6
+    layoffs:       5
+    "price target": 4
+    subpoena:      7
+    sec:           5
+    probe:         6
+    approval:      7
+
+  # Source tier → weight added on top of keyword score.
+  source_weight:
+    reuters.com:           4
+    bloomberg.com:         4
+    wsj.com:               4
+    ft.com:                3
+    cnbc.com:              3
+    nytimes.com:           3
+    barrons.com:           3
+    marketwatch.com:       2
+    Reuters:               4
+    Bloomberg:             4
+    "The Wall Street Journal": 4
+    "Financial Times":     3
+    CNBC:                  3
+    "Yahoo Finance":       2
+    "Google News":         1
+  default_source_weight: 0
+
+# --- Portfolio impact ----------------------------------------------------
+# Final multiplier = 1 + (portfolio_weight * portfolio_weight_scale)
+# A 40% holding → 1 + 0.40*3 = 2.2x. A 2% holding → 1.06x.
+portfolio_weight_scale: 3.0
+# News about an unheld ticker (e.g. theme adjacency) gets this base
+# multiplier instead of 1.0.
+unheld_multiplier: 0.4
+
+# --- Novelty -------------------------------------------------------------
+# Applied as a flat penalty when the headline was already seen.
+novelty_penalty: -999  # effectively filters duplicates out
+
+# --- Urgency -------------------------------------------------------------
+# Headline words that imply action is imminent.
+urgency_keywords:
+  tonight:   4
+  today:     3
+  "pre-market": 3
+  "after-hours": 3
+  breaking:  3
+  halted:    5
+  "just now": 3
+
+# --- Tier thresholds ----------------------------------------------------
+# Any score ≥ push_threshold AND on a held ticker → push tier (rate-limited).
+# Otherwise, top-N by score go in the morning brief.
+tiers:
+  push_threshold:   22
+  hourly_threshold: 10
+  max_pushes_per_day: 2
